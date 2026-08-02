@@ -1,18 +1,16 @@
-"""Tests for the Orchestrator agent."""
+"""Tests for the Orchestrator agent — including state machine."""
 
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from codepilot.agents.orchestrator import (
-    ORCHESTRATOR_SYSTEM_PROMPT,
-    Orchestrator,
-)
+from codepilot.agents.orchestrator import ORCHESTRATOR_SYSTEM_PROMPT, Orchestrator
 from codepilot.config import Config
 from codepilot.core.agent_factory import DeepAgentFactory
 from codepilot.core.base_agent import AgentResult, BaseAgent
 from codepilot.core.llm_provider import LLMProvider
 from codepilot.core.tool_registry import ToolRegistry
+from codepilot.memory.working import TaskState
 
 
 @pytest.fixture
@@ -27,7 +25,6 @@ def config():
 
 @pytest.fixture
 def mock_agent():
-    """A mock BaseAgent that returns predictable results."""
     agent = AsyncMock(spec=BaseAgent)
     agent.name = "Orchestrator"
     agent.invoke.return_value = AgentResult(
@@ -45,23 +42,16 @@ def mock_agent():
 class TestOrchestratorCreation:
     """Test Orchestrator creation."""
 
-    def test_create_with_mock_agent(
-        self, mock_agent, config
-    ):
-        orchestrator = Orchestrator(
-            agent=mock_agent, config=config
-        )
+    def test_create_with_mock_agent(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
         assert orchestrator._agent == mock_agent
 
     @patch(
-        "codepilot.core.agent_factory"
-        ".DEEPAGENTS_AVAILABLE",
+        "codepilot.core.agent_factory.DEEPAGENTS_AVAILABLE",
         False,
     )
     def test_create_via_factory(self, config):
-        factory = DeepAgentFactory(
-            config, LLMProvider(config), ToolRegistry()
-        )
+        factory = DeepAgentFactory(config, LLMProvider(config), ToolRegistry())
         orchestrator = Orchestrator.create(factory, config)
         assert orchestrator is not None
 
@@ -88,60 +78,79 @@ class TestOrchestratorHandleMessage:
     """Test message handling."""
 
     @pytest.mark.asyncio
-    async def test_handle_message_returns_result(
-        self, mock_agent, config
-    ):
-        orchestrator = Orchestrator(
-            agent=mock_agent, config=config
-        )
-        result = await orchestrator.handle_message(
-            "Fix the division by zero bug"
-        )
+    async def test_handle_message_returns_result(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        result = await orchestrator.handle_message("Fix the division by zero bug")
         assert isinstance(result, AgentResult)
         assert result.success is True
 
     @pytest.mark.asyncio
-    async def test_handle_message_passes_to_agent(
-        self, mock_agent, config
-    ):
-        orchestrator = Orchestrator(
-            agent=mock_agent, config=config
-        )
-        await orchestrator.handle_message(
-            "Add modulo operation"
-        )
+    async def test_handle_message_passes_to_agent(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        await orchestrator.handle_message("Add modulo operation")
         mock_agent.invoke.assert_called_once()
-        # Verify the message was passed correctly
         call_args = mock_agent.invoke.call_args
         messages = call_args[0][0]
         assert messages[0]["role"] == "user"
         assert messages[0]["content"] == "Add modulo operation"
 
     @pytest.mark.asyncio
-    async def test_handle_message_with_todos(
-        self, mock_agent, config
-    ):
-        orchestrator = Orchestrator(
-            agent=mock_agent, config=config
-        )
-        result = await orchestrator.handle_message(
-            "Fix a bug"
-        )
+    async def test_handle_message_with_todos(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        result = await orchestrator.handle_message("Fix a bug")
         assert len(result.todos) == 3
         assert "Analyze the issue" in result.todos
+
+
+class TestOrchestratorStateMachine:
+    """Test state machine integration."""
+
+    def test_initial_task_state(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        state = orchestrator.get_task_state(1)
+        assert state is None  # No task yet
+
+    @pytest.mark.asyncio
+    async def test_handle_message_creates_task(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        await orchestrator.handle_message("Fix the bug", issue_id=42)
+        state = orchestrator.get_task_state(42)
+        assert state == TaskState.EXPLORING
+
+    @pytest.mark.asyncio
+    async def test_valid_transition(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        await orchestrator.handle_message("Test", issue_id=1)
+        result = orchestrator.transition_task(1, TaskState.IMPLEMENTING)
+        assert result is True
+        assert orchestrator.get_task_state(1) == TaskState.IMPLEMENTING
+
+    @pytest.mark.asyncio
+    async def test_invalid_transition(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        await orchestrator.handle_message("Test", issue_id=2)
+        result = orchestrator.transition_task(2, TaskState.DONE)
+        assert result is False
+        assert orchestrator.get_task_state(2) == TaskState.EXPLORING
+
+    @pytest.mark.asyncio
+    async def test_fail_task(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        await orchestrator.handle_message("Test", issue_id=3)
+        orchestrator.fail_task(3, "Something went wrong")
+        assert orchestrator.get_task_state(3) == TaskState.FAILED
 
 
 class TestStartupFlow:
     """Test the full startup sequence."""
 
     @patch(
-        "codepilot.core.agent_factory"
-        ".DEEPAGENTS_AVAILABLE",
+        "codepilot.core.agent_factory.DEEPAGENTS_AVAILABLE",
         False,
     )
     @pytest.mark.asyncio
     async def test_startup_returns_orchestrator(self):
         from codepilot.main import startup
 
-        orchestrator = await startup()
+        orchestrator, config = await startup()
         assert isinstance(orchestrator, Orchestrator)

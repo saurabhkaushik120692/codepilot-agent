@@ -11,6 +11,9 @@ from codepilot.config import Config
 from codepilot.core.agent_factory import DeepAgentFactory
 from codepilot.core.llm_provider import LLMProvider
 from codepilot.core.tool_registry import ToolRegistry
+from codepilot.github_integration.classifier import IssueClassifier
+from codepilot.github_integration.github_service import GitHubService
+from codepilot.github_integration.issue_poller import IssuePoller
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,50 +22,90 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def startup() -> Orchestrator:
-    """Initialize all components and return the Orchestrator.
+async def startup() -> tuple[Orchestrator, Config]:
+    """Initialize all components and return the Orchestrator and Config.
 
-    Startup order (follows dependency chain):
-    1. Config — loads .env and environment variables
-    2. LLMProvider — creates LLM instances with fallback
-    3. ToolRegistry — manages available tools per role
-    4. DeepAgentFactory — creates agents through deepagents
-    5. Orchestrator — the root agent
+    Returns a tuple so callers can reuse the Config
+    without creating a second instance.
     """
     logger.info("Starting CodePilot...")
 
-    # 1. Load config
     config = Config()
     logger.info(
         "Config loaded — primary LLM: "
         f"{config.primary_llm}"
     )
 
-    # 2. Create LLM provider
     llm_provider = LLMProvider(config)
     logger.info("LLM provider initialized")
 
-    # 3. Create tool registry (tools registered in Phase 3+)
     tool_registry = ToolRegistry()
     logger.info("Tool registry initialized")
 
-    # 4. Create agent factory
     factory = DeepAgentFactory(
         config, llm_provider, tool_registry
     )
     logger.info("Agent factory initialized")
 
-    # 5. Create Orchestrator
     orchestrator = Orchestrator.create(factory, config)
     logger.info("Orchestrator created — ready for tasks")
 
-    return orchestrator
+    return orchestrator, config
+
+
+async def start_polling(
+    orchestrator: Orchestrator, config: Config
+) -> None:
+    """Start the issue polling loop (if GitHub is configured)."""
+    if not config.github_app_id:
+        logger.info(
+            "GitHub not configured — skipping issue polling"
+        )
+        return
+
+    try:
+        github = GitHubService(config)
+        classifier = IssueClassifier(
+            LLMProvider(config), config
+        )
+        poller = IssuePoller(github, classifier, config)
+
+        logger.info("Starting issue poller...")
+        async for polled in poller.poll():
+            logger.info(
+                f"Received issue #{polled.issue.number}: "
+                f"{polled.issue.title} "
+                f"({polled.classification.type})"
+            )
+            result = await orchestrator.handle_message(
+                f"Issue #{polled.issue.number}: "
+                f"{polled.issue.title}\n"
+                f"{polled.issue.body}\n\n"
+                f"Classification: "
+                f"{polled.classification.type}",
+                issue_id=polled.issue.id,
+            )
+            logger.info(
+                "Orchestrator result: "
+                f"success={result.success}"
+            )
+
+    except Exception as e:
+        logger.error(f"Polling failed: {e}")
+        logger.info("Continuing without polling...")
 
 
 async def main() -> None:
     """Main async entry point."""
-    orchestrator = await startup()
+    orchestrator, config = await startup()
+
+    polling_task = asyncio.create_task(
+        start_polling(orchestrator, config)
+    )
+
     await orchestrator.start_idle_loop()
+
+    polling_task.cancel()
 
 
 def entrypoint() -> None:
