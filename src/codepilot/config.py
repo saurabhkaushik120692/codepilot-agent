@@ -50,6 +50,18 @@ class Config(BaseSettings):
     sandbox_base_dir: str = "~/.codepilot/sandboxes/"
     chromadb_persist_dir: str = "~/.codepilot/data/chromadb/"
 
+    # --- Bonus: Sandbox Provider ---
+    sandbox_provider: str = "local"
+
+    # --- Bonus: LangSmith ---
+    langsmith_enabled: bool = False
+    langchain_api_key: str = ""
+    langchain_project: str = "codepilot"
+
+    # --- Bonus: ACP ---
+    acp_enabled: bool = False
+    acp_port: int = 8420
+
     # --- Helpers ---
     @property
     def primary_provider(self) -> str:

@@ -7,16 +7,19 @@ requires-python = ">=3.13"
 dependencies = [
     "chromadb>=1.5.9",
     "deepagents>=0.6.12",
+    "fastapi>=0.141.1",
     "langchain-anthropic>=1.5.2",
     "langchain-community>=0.4.2",
     "langchain-google-genai>=4.3.1",
     "langchain-openai>=1.4.1",
     "langgraph>=1.2.9",
+    "langsmith>=0.10.10",
     "nemoguardrails>=0.23.0",
     "pydantic-settings>=2.14.2",
     "pygithub>=2.9.1",
     "textual>=8.2.8",
     "tiktoken>=0.13.0",
+    "uvicorn>=0.52.1",
 ]
 
 [build-system]
