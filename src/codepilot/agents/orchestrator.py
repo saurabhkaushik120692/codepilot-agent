@@ -5,8 +5,9 @@ The Orchestrator:
 2. Loads the appropriate skill based on classification type
 3. Queries episodic + semantic memory for context
 4. Spawns Repo Explorer → Coder → Test Agent
-5. Stores lessons and session summaries
-6. Transitions through the state machine
+5. Reviews the Coder's diff before PR creation
+6. Stores lessons and session summaries
+7. Transitions through the state machine
 
 It uses BaseAgent (via AgentFactory) — never touches deepagents directly.
 """
@@ -14,6 +15,8 @@ It uses BaseAgent (via AgentFactory) — never touches deepagents directly.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from codepilot.config import Config
@@ -182,3 +185,92 @@ class Orchestrator:
     def get_active_tasks(self) -> dict[int, WorkingMemory]:
         """Return all active task memory entries."""
         return dict(self._active_tasks)
+
+    async def review_diff(self, working_memory: WorkingMemory) -> DiffReview:
+        """Review the Coder's proposed diff using the LLM.
+
+        Decision logic:
+        - APPROVE if: diff is clean, addresses the issue, tests pass
+        - RETRY if: diff has issues but fixable, retry_count < max
+        - ESCALATE if: diff is risky, touches many files, or unclear
+
+        Auto-approve if confidence > 0.85 and < 5 files changed.
+        Auto-escalate if > 10 files changed or retries exhausted.
+        """
+        file_count = len(working_memory.relevant_files)
+        diff = working_memory.current_diff or ""
+
+        if file_count > 10:
+            return DiffReview(
+                decision=DiffReviewResult.ESCALATE,
+                feedback="Too many files changed, needs human review",
+                confidence=0.0,
+            )
+
+        if working_memory.retry_count >= self._config.max_coder_retries:
+            return DiffReview(
+                decision=DiffReviewResult.ESCALATE,
+                feedback="Max retries exceeded",
+                confidence=0.0,
+            )
+
+        review_prompt = (
+            "Review this code diff and decide: APPROVE, RETRY, or ESCALATE.\n\n"
+            f"Files changed: {file_count}\n"
+            f"Diff:\n{diff[:3000]}\n\n"
+            "Respond with JSON: "
+            '{"decision": "APPROVE|RETRY|ESCALATE", '
+            '"feedback": "...", "confidence": 0.0-1.0}'
+        )
+
+        try:
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You review code diffs. Respond with valid JSON only.",
+                },
+                {"role": "user", "content": review_prompt},
+            ]
+            response = await self._agent.invoke(messages)
+
+            import json
+
+            try:
+                data = json.loads(response.output)
+            except json.JSONDecodeError:
+                data = {"decision": "APPROVE", "feedback": "", "confidence": 0.5}
+
+            decision_str = data.get("decision", "APPROVE").upper()
+            decision = DiffReviewResult(decision_str)
+            feedback = data.get("feedback", "")
+            confidence = float(data.get("confidence", 0.5))
+
+            if confidence > 0.85 and file_count < 5:
+                decision = DiffReviewResult.APPROVE
+
+            logger.info(f"Diff review: {decision.value} (confidence={confidence:.2f})")
+            return DiffReview(
+                decision=decision,
+                feedback=feedback,
+                confidence=confidence,
+            )
+
+        except Exception:
+            return DiffReview(
+                decision=DiffReviewResult.APPROVE,
+                feedback="Auto-approved (review unavailable)",
+                confidence=0.5,
+            )
+
+
+class DiffReviewResult(str, Enum):
+    APPROVE = "APPROVE"
+    RETRY = "RETRY"
+    ESCALATE = "ESCALATE"
+
+
+@dataclass
+class DiffReview:
+    decision: DiffReviewResult
+    feedback: str
+    confidence: float

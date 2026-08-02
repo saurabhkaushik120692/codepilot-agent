@@ -1,0 +1,62 @@
+/* CodePilot TUI Styles — 2x2 Grid Layout with dark theme */
+
+Screen {
+    background: #1a1b2e;
+}
+
+#main-grid {
+    layout: grid;
+    grid-size: 2 2;
+    grid-gutter: 1;
+}
+
+Header {
+    background: #1a1b2e;
+    color: #61afef;
+    text-style: bold;
+}
+
+Footer {
+    background: #1a1b2e;
+    color: #5c6370;
+}
+
+/* Panel borders */
+Panel {
+    border: solid #3a3f5a;
+}
+
+/* Issues Panel */
+#issues-panel {
+    border-title-color: #61afef;
+}
+
+#issues-panel ListView {
+    background: #1e2036;
+}
+
+/* Active Task Panel */
+#task-panel {
+    border-title-color: #98c379;
+}
+
+/* Agent Logs Panel */
+#logs-panel {
+    border-title-color: #e5c07b;
+}
+
+#logs-panel RichLog {
+    background: #1e2036;
+}
+
+/* Approval Panel */
+#approval-panel {
+    border-title-color: #e06c75;
+}
+
+/* Status colors */
+.status-success { color: #4a9e42; }
+.status-warning { color: #e5c07b; }
+.status-failure { color: #e06c75; }
+.status-info { color: #61afef; }
+.status-manual { color: #c678dd; }

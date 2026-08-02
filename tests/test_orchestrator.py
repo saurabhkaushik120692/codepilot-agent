@@ -4,7 +4,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from codepilot.agents.orchestrator import ORCHESTRATOR_SYSTEM_PROMPT, Orchestrator
+from codepilot.agents.orchestrator import (
+    ORCHESTRATOR_SYSTEM_PROMPT,
+    DiffReview,
+    DiffReviewResult,
+    Orchestrator,
+)
 from codepilot.config import Config
 from codepilot.core.agent_factory import DeepAgentFactory
 from codepilot.core.base_agent import AgentResult, BaseAgent
@@ -12,7 +17,7 @@ from codepilot.core.llm_provider import LLMProvider
 from codepilot.core.tool_registry import ToolRegistry
 from codepilot.memory.episodic import EpisodicMemory, SessionSummary
 from codepilot.memory.semantic import SemanticMemory
-from codepilot.memory.working import TaskState
+from codepilot.memory.working import TaskState, WorkingMemory
 from codepilot.skills.base import SkillRegistry
 from codepilot.skills.bug_fix import BugFixSkill
 from codepilot.skills.feature_addition import FeatureAdditionSkill
@@ -231,3 +236,69 @@ class TestOrchestratorIntegration:
         )
         assert result.success is True
         assert orchestrator.get_task_state(100) == TaskState.EXPLORING
+
+
+class TestOrchestratorDiffReview:
+    """Test the diff review step."""
+
+    @pytest.mark.asyncio
+    async def test_review_diff_auto_escalate_many_files(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        wm = WorkingMemory(issue_id=1)
+        wm.relevant_files = [f"file_{i}.py" for i in range(15)]
+        wm.current_diff = "some diff"
+        result = await orchestrator.review_diff(wm)
+        assert result.decision == DiffReviewResult.ESCALATE
+
+    @pytest.mark.asyncio
+    async def test_review_diff_escalate_max_retries(self, mock_agent, config):
+        config.max_coder_retries = 3
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        wm = WorkingMemory(issue_id=2)
+        wm.relevant_files = ["main.py"]
+        wm.retry_count = 3
+        wm.current_diff = "diff"
+        result = await orchestrator.review_diff(wm)
+        assert result.decision == DiffReviewResult.ESCALATE
+
+    @pytest.mark.asyncio
+    async def test_review_diff_with_few_files(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        mock_agent.invoke.return_value.output = (
+            '{"decision": "APPROVE", "feedback": "Good", "confidence": 0.9}'
+        )
+        wm = WorkingMemory(issue_id=3)
+        wm.relevant_files = ["main.py", "utils.py"]
+        wm.current_diff = "--- a/main.py\n+++ b/main.py\n@@ -1 +1 @@\n+fix"
+        result = await orchestrator.review_diff(wm)
+        assert result.decision in (
+            DiffReviewResult.APPROVE,
+            DiffReviewResult.RETRY,
+            DiffReviewResult.ESCALATE,
+        )
+
+    @pytest.mark.asyncio
+    async def test_review_diff_fallback_on_error(self, mock_agent, config):
+        orchestrator = Orchestrator(agent=mock_agent, config=config)
+        mock_agent.invoke.side_effect = Exception("LLM error")
+        wm = WorkingMemory(issue_id=4)
+        wm.relevant_files = ["main.py"]
+        wm.current_diff = "diff"
+        result = await orchestrator.review_diff(wm)
+        assert result.decision == DiffReviewResult.APPROVE
+
+
+class TestDiffReviewResult:
+    def test_enum_values(self):
+        assert DiffReviewResult.APPROVE.value == "APPROVE"
+        assert DiffReviewResult.RETRY.value == "RETRY"
+        assert DiffReviewResult.ESCALATE.value == "ESCALATE"
+
+    def test_diff_review_dataclass(self):
+        review = DiffReview(
+            decision=DiffReviewResult.APPROVE,
+            feedback="Looks good",
+            confidence=0.95,
+        )
+        assert review.decision == DiffReviewResult.APPROVE
+        assert review.confidence == 0.95

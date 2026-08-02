@@ -15,6 +15,7 @@ dependencies = [
     "nemoguardrails>=0.23.0",
     "pydantic-settings>=2.14.2",
     "pygithub>=2.9.1",
+    "textual>=8.2.8",
     "tiktoken>=0.13.0",
 ]
 
