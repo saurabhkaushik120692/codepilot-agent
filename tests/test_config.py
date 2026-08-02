@@ -9,7 +9,7 @@ class TestConfigDefaults:
     def test_loads_without_env_file(self):
         """Config should work even if .env is missing."""
         config = Config(_env_file=None)
-        assert config.primary_llm == "anthropic:claude-sonnet-4-20250514"
+        assert config.primary_llm == "google:gemini-1.5-pro"
 
     def test_default_poll_interval(self):
         config = Config(_env_file=None)
@@ -33,17 +33,17 @@ class TestConfigParsing:
 
     def test_primary_provider(self):
         config = Config(_env_file=None)
-        assert config.primary_provider == "anthropic"
+        assert config.primary_provider == "google"
 
     def test_primary_model(self):
         config = Config(_env_file=None)
-        assert config.primary_model == "claude-sonnet-4-20250514"
+        assert config.primary_model == "gemini-1.5-pro"
 
     def test_fallback_chain(self):
         config = Config(_env_file=None)
         assert config.fallback_chain == [
-            ("openai", "gpt-4o"),
-            ("google", "gemini-1.5-pro"),
+            ("groq", "llama-3.2-90b-text-preview"),
+            ("anthropic", "claude-sonnet-4-20250514"),
         ]
 
     def test_custom_primary_llm(self, monkeypatch):

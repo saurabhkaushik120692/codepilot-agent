@@ -91,7 +91,7 @@ graph TD
 
     subgraph Core_Layer["Core Infrastructure Layer"]
         ABS["Abstraction Layer<br/>(deepagents wrapper)"]
-        LLM["LLM Provider<br/>Claude Sonnet (primary)<br/>GPT-4o / Gemini (fallback)"]
+        LLM["LLM Provider<br/>Gemini 1.5 Pro (primary)<br/>Groq / Claude Sonnet (fallback)"]
         GR["Guardrails<br/>(NeMo + Custom)"]
         SKL["Skills System<br/>(5 skills)"]
     end
@@ -209,13 +209,13 @@ classDiagram
 **Fallback Strategy:**
 
 ```
-Claude Sonnet (primary)
+Gemini 1.5 Pro (primary)
     │ rate limit / API error
     ▼
-GPT-4o (fallback #1)
+Groq Llama (fallback #1)
     │ rate limit / API error
     ▼
-Gemini 1.5 Pro (fallback #2)
+Claude Sonnet (fallback #2)
 ```
 
 ---
@@ -827,9 +827,9 @@ graph TD
     end
 
     subgraph LLMs["LLM Providers"]
-        CL["Claude Sonnet<br/>(langchain-anthropic)"]
-        GP["GPT-4o<br/>(langchain-openai)"]
-        GM["Gemini 1.5 Pro<br/>(langchain-google-genai)"]
+        CL["Gemini 1.5 Pro<br/>(langchain-google-genai)"]
+        GP["Groq Llama<br/>(langchain-groq)"]
+        GM["Claude Sonnet<br/>(langchain-anthropic)"]
     end
 
     subgraph Storage["Storage"]
@@ -869,9 +869,9 @@ graph TD
 | Package | Purpose |
 |---|---|
 | `deepagents` | Core agent framework |
-| `langchain-anthropic` | Primary LLM — Claude Sonnet |
-| `langchain-openai` | Fallback LLM — GPT-4o |
-| `langchain-google-genai` | Fallback LLM — Gemini 1.5 Pro |
+| `langchain-google-genai` | Primary LLM — Gemini 1.5 Pro |
+| `langchain-groq` | Fallback LLM — Groq Llama |
+| `langchain-anthropic` | Fallback LLM — Claude Sonnet |
 | `langchain-community` | GitHub Toolkit |
 | `langgraph` | Agent runtime + checkpointing |
 | `chromadb` | Semantic memory vector store |
@@ -1003,8 +1003,8 @@ All settings are loaded from `.env` + environment variables:
 
 | Setting | Default | Description |
 |---|---|---|
-| `PRIMARY_LLM` | `anthropic:claude-sonnet-4-20250514` | Primary LLM model |
-| `FALLBACK_LLMS` | `openai:gpt-4o,google:gemini-1.5-pro` | Fallback chain |
+| `PRIMARY_LLM` | `google:gemini-1.5-pro` | Primary LLM model |
+| `FALLBACK_LLMS` | `groq:llama-3.2-90b-text-preview,anthropic:claude-sonnet-4-20250514` | Fallback chain |
 | `GITHUB_APP_ID` | — | GitHub App ID |
 | `GITHUB_APP_PRIVATE_KEY_PATH` | — | Path to `.pem` file |
 | `GITHUB_REPOSITORY` | `codepilot-test-repo` | Target repository |
@@ -1076,7 +1076,7 @@ graph TD
 |---|---|---|
 | `deepagents` API instability | High | Abstraction layer isolates all agents; swap to `LangGraphFactory` in one file |
 | `langchain-community` GitHub Toolkit deprecation | Medium | `GitHubService` wrapper can swap to `PyGithub` |
-| Claude Sonnet rate limits | Medium | Multi-provider fallback chain |
+| Gemini 1.5 Pro rate limits | Medium | Multi-provider fallback chain to Groq → Claude Sonnet |
 | Sandbox escape via `execute` | High | 4-layer guardrails: filters → NeMo → HITL → filesystem permissions |
 | TUI complexity | Medium | Incremental panel development; Textual's built-in `RichLog` + `ListView` |
 | LLM rate limits during polling | Medium | Classification caching; configurable poll intervals |

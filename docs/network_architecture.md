@@ -329,9 +329,9 @@ graph LR
 
     subgraph External["External APIs"]
         GH["GitHub API<br/>api.github.com<br/>Issue polling, PR creation"]
-        ANTH["Anthropic API<br/>api.anthropic.com<br/>Claude Sonnet (primary LLM)"]
-        OAI["OpenAI API<br/>api.openai.com<br/>GPT-4o (fallback)"]
-        GOOG["Google AI API<br/>generativelanguage.googleapis.com<br/>Gemini 1.5 Pro (fallback)"]
+        GOOG["Google AI API<br/>generativelanguage.googleapis.com<br/>Gemini 1.5 Pro (primary LLM)"]
+        GROQ["Groq API<br/>api.groq.com<br/>Llama 3.2 (fallback)"]
+        ANTH["Anthropic API<br/>api.anthropic.com<br/>Claude Sonnet (fallback)"]
         LS["LangSmith API<br/>api.smith.langchain.com<br/>Tracing (Bonus)"]
     end
 

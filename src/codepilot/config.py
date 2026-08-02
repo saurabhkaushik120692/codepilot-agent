@@ -18,13 +18,17 @@ class Config(BaseSettings):
     )
 
     # --- LLM ---
-    primary_llm: str = "anthropic:claude-sonnet-4-20250514"
-    fallback_llms: str = "openai:gpt-4o,google:gemini-1.5-pro"
+    primary_llm: str = "google:gemini-1.5-pro"
+    fallback_llms: str = (
+        "groq:llama-3.2-90b-text-preview,"
+        "anthropic:claude-sonnet-4-20250514"
+    )
 
     # --- API Keys ---
     anthropic_api_key: str = ""
     openai_api_key: str = ""
     google_api_key: str = ""
+    groq_api_key: str = ""
 
     # --- GitHub ---
     github_app_id: str = ""

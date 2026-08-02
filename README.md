@@ -66,7 +66,7 @@ TRIAGED → EXPLORING → IMPLEMENTING → TESTING → PR_OPENED → DONE
 | Layer | Technologies |
 |-------|-------------|
 | Agent Framework | deepagents, LangGraph |
-| LLM | Claude Sonnet (primary) → GPT-4o → Gemini 1.5 Pro (fallback) |
+| LLM | Gemini 1.5 Pro (primary) → Groq (Llama) → Claude Sonnet (fallback) |
 | Memory | ChromaDB (semantic), LangGraph Memory Store (episodic), in-memory (working) |
 | Guardrails | Custom regex filters, NeMo Guardrails (Colang 2.0), HITL gates |
 | TUI | Textual — 4-panel grid layout |

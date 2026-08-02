@@ -21,7 +21,7 @@ Each phase has its own detailed plan in `docs/implementation_phases/phaseN/plan.
 
 | Decision | Choice |
 |----------|--------|
-| **Primary LLM** | Claude Sonnet (via `langchain-anthropic`), with multi-provider fallback to GPT-4o and Gemini 1.5 Pro |
+| **Primary LLM** | Gemini 1.5 Pro (via `langchain-google-genai`), with multi-provider fallback to Groq and Claude Sonnet |
 | **Test Repository** | New repo `codepilot-test-repo` with synthetic issues |
 | **GitHub Auth** | GitHub App (App ID + private key) |
 | **DeepAgents Strategy** | Build an **abstraction layer** over `deepagents` so we can swap to raw LangGraph if the API changes |
@@ -49,7 +49,7 @@ graph TD
     SKL["Skills System<br/>(5 skills)"]
     GR["Guardrails<br/>(NeMo + Custom)"]
     ABS["Abstraction Layer<br/>(deepagents wrapper)"]
-    LLM["LLM Provider<br/>Claude Sonnet (primary)<br/>GPT-4o / Gemini (fallback)"]
+    LLM["LLM Provider<br/>Gemini 1.5 Pro (primary)<br/>Groq / Claude Sonnet (fallback)"]
 
     TUI <--> ORC
     ORC --> RE
@@ -102,11 +102,12 @@ graph TD
 
 | Setting | Default | Added In |
 |---------|---------|----------|
-| `PRIMARY_LLM` | `anthropic:claude-sonnet-4-20250514` | Step 2 |
-| `FALLBACK_LLMS` | `openai:gpt-4o,google:gemini-1.5-pro` | Step 2 |
+| `PRIMARY_LLM` | `google:gemini-1.5-pro` | Step 2 |
+| `FALLBACK_LLMS` | `groq:llama-3.2-90b-text-preview,anthropic:claude-sonnet-4-20250514` | Step 2 |
 | `ANTHROPIC_API_KEY` | `""` | Step 2 |
 | `OPENAI_API_KEY` | `""` | Step 2 |
 | `GOOGLE_API_KEY` | `""` | Step 2 |
+| `GROQ_API_KEY` | `""` | Step 2 |
 | `GITHUB_APP_ID` | `""` | Step 2 |
 | `GITHUB_APP_PRIVATE_KEY_PATH` | `""` | Step 2 |
 | `GITHUB_REPOSITORY` | `codepilot-test-repo` | Step 2 |
@@ -521,9 +522,9 @@ graph LR
 | `pytest-cov` | Phase 1, Step 1 | Test coverage |
 | `ruff` | Phase 1, Step 1 | Linting & formatting |
 | `pydantic-settings` | Phase 1, Step 2 | Config from .env |
-| `langchain-anthropic` | Phase 1, Step 4 | Claude Sonnet (primary LLM) |
-| `langchain-openai` | Phase 1, Step 4 | GPT-4o (fallback) |
-| `langchain-google-genai` | Phase 1, Step 4 | Gemini (fallback) |
+| `langchain-google-genai` | Phase 1, Step 4 | Gemini 1.5 Pro (primary LLM) |
+| `langchain-groq` | Phase 6 | Groq Llama (fallback) |
+| `langchain-anthropic` | Phase 1, Step 4 | Claude Sonnet (fallback) |
 | `deepagents` | Phase 1, Step 6 | Agent framework |
 | `langgraph` | Phase 1, Step 6 | Agent runtime |
 | `aiosqlite` | Phase 1, Step 6 | Async SQLite for LangGraph checkpointing |
@@ -543,7 +544,7 @@ graph LR
 |------|--------|------------|
 | `deepagents` API instability | High — could break core agent creation | **Abstraction layer** (`core/`) isolates all agents; swap to `LangGraphFactory` in one file |
 | `langchain-community` GitHub Toolkit deprecation | Medium — toolkit works but unmaintained | `GitHubService` wrapper abstracts it; can swap to `PyGithub` |
-| Claude Sonnet rate limits | Medium — primary LLM unavailable | Multi-provider fallback to GPT-4o → Gemini 1.5 Pro |
+| Gemini rate limits | Medium — primary LLM unavailable | Multi-provider fallback to Groq → Claude Sonnet |
 | GitHub App auth complexity | Low — more setup than PAT | Provide clear `.env.example` + setup guide in README |
 | ChromaDB performance at scale | Low — CodePilot handles small repos | Persistent storage; set collection size limits |
 | LLM rate limits during polling | Medium — frequent LLM calls for classification | Cache classifications; batch polling; configurable intervals |

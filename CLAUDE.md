@@ -55,7 +55,7 @@ CodePilot is a **terminal-based, multi-agent AI platform** that autonomously tri
 | Layer | Technology |
 |-------|-----------|
 | **Agent Framework** | `deepagents` (LangChain/LangGraph) behind an abstraction layer |
-| **Primary LLM** | Claude Sonnet (`langchain-anthropic`) |
+| **Primary LLM** | Gemini 1.5 Pro (`langchain-google-genai`), fallback: Groq → Claude Sonnet |
 | **Fallback LLMs** | GPT-4o (`langchain-openai`), Gemini 1.5 Pro (`langchain-google-genai`) |
 | **TUI** | `textual` (4-panel terminal UI) |
 | **Episodic Memory** | LangGraph Memory Store (`langgraph.store`) |
@@ -298,9 +298,9 @@ uv sync
 | Package | Purpose |
 |---------|---------|
 | `deepagents` | Core agent framework |
-| `langchain-anthropic` | Primary LLM (Claude Sonnet) |
-| `langchain-openai` | Fallback LLM (GPT-4o) |
-| `langchain-google-genai` | Fallback LLM (Gemini 1.5 Pro) |
+| `langchain-google-genai` | Primary LLM (Gemini 1.5 Pro) |
+| `langchain-groq` | Fallback LLM (Groq Llama) |
+| `langchain-anthropic` | Fallback LLM (Claude Sonnet) |
 | `langchain-community` | GitHub Toolkit |
 | `langgraph` | Agent runtime + checkpointing + memory store |
 | `chromadb` | Semantic memory vector store |

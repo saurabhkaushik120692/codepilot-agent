@@ -1,7 +1,7 @@
 """Multi-provider LLM factory with automatic fallback.
 
-Primary: Claude Sonnet (Anthropic)
-Fallback chain: GPT-4o (OpenAI) → Gemini 1.5 Pro (Google)
+Primary: Gemini 1.5 Pro (Google)
+Fallback chain: Groq (Llama) → Claude Sonnet (Anthropic)
 
 The fallback activates when the primary provider returns a rate limit
 or API error. This ensures the system stays operational even when
@@ -14,6 +14,7 @@ from typing import Any
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 
 from codepilot.config import Config
@@ -35,13 +36,23 @@ class LLMProvider:
         """Create an LLM instance for the given provider and model.
 
         Args:
-            provider: One of 'anthropic', 'openai', 'google'.
-            model: The model identifier (e.g., 'claude-sonnet-4-20250514').
+            provider: One of 'google', 'groq', 'anthropic', 'openai'.
+            model: The model identifier (e.g., 'gemini-1.5-pro').
 
         Raises:
             ValueError: If the provider is unknown.
         """
         match provider:
+            case "google":
+                return ChatGoogleGenerativeAI(
+                    model=model,
+                    google_api_key=self._config.google_api_key,
+                )
+            case "groq":
+                return ChatGroq(
+                    model=model,
+                    api_key=self._config.groq_api_key,
+                )
             case "anthropic":
                 return ChatAnthropic(
                     model=model,
@@ -52,16 +63,11 @@ class LLMProvider:
                     model=model,
                     api_key=self._config.openai_api_key,
                 )
-            case "google":
-                return ChatGoogleGenerativeAI(
-                    model=model,
-                    google_api_key=self._config.google_api_key,
-                )
             case _:
                 raise ValueError(f"Unknown LLM provider: {provider}")
 
     def get_primary(self) -> BaseChatModel:
-        """Return the primary LLM (Claude Sonnet by default)."""
+        """Return the primary LLM (Gemini 1.5 Pro by default)."""
         return self._create_model(
             self._config.primary_provider,
             self._config.primary_model,
@@ -84,7 +90,9 @@ class LLMProvider:
             try:
                 chain.append(self._create_model(provider, model))
             except Exception as e:
-                logger.warning(f"Could not create fallback {provider}:{model}: {e}")
+                logger.warning(
+                    f"Could not create fallback {provider}:{model}: {e}"
+                )
         return chain
 
     async def invoke_with_fallback(self, messages: list, **kwargs: Any) -> Any:
@@ -114,5 +122,6 @@ class LLMProvider:
                 continue
 
         raise LLMProviderError(
-            f"All {len(chain)} LLM providers failed. Last error: {last_error}"
+            f"All {len(chain)} LLM providers failed. "
+            f"Last error: {last_error}"
         )

@@ -296,7 +296,7 @@ The TUI must have 4 panels in a fixed layout:
 | GitHub Integration | `langchain_community.agent_toolkits.github` |
 | Sandboxed Execution | DeepAgents local sandbox backend |
 | Memory Store | LangGraph Memory Store (episodic) + ChromaDB (semantic) |
-| LLM | GPT-4o / Claude Sonnet / Gemini 1.5 Pro |
+| LLM | Gemini 1.5 Pro / Groq Llama / Claude Sonnet |
 | TUI | `textual` or any TUI framework |
 | Guardrails | Custom Python + NeMo Guardrails |
 | Context Engineering | DeepAgents virtual filesystem + auto-summarization |

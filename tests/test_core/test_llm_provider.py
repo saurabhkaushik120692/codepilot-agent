@@ -19,6 +19,7 @@ def config():
         anthropic_api_key="test-anthropic-key",
         openai_api_key="test-openai-key",
         google_api_key="test-google-key",
+        groq_api_key="test-groq-key",
     )
 
 
@@ -30,9 +31,9 @@ def provider(config):
 class TestGetPrimary:
     """Test primary model creation."""
 
-    def test_returns_anthropic_by_default(self, provider):
+    def test_returns_google_by_default(self, provider):
         model = provider.get_primary()
-        assert "claude" in str(model.model).lower() or hasattr(model, "model")
+        assert "gemini" in str(model.model).lower() or hasattr(model, "model")
 
     def test_custom_primary_from_config(self):
         config = Config(
@@ -70,6 +71,12 @@ class TestGetModel:
         model = provider.get_model("google", "gemini-1.5-pro")
         assert isinstance(model, ChatGoogleGenerativeAI)
 
+    def test_get_groq(self, provider):
+        from langchain_groq import ChatGroq
+
+        model = provider.get_model("groq", "llama-3.2-90b-text-preview")
+        assert isinstance(model, ChatGroq)
+
     def test_unknown_provider_raises(self, provider):
         with pytest.raises(ValueError, match="Unknown LLM provider"):
             provider.get_model("unknown", "some-model")
@@ -91,12 +98,12 @@ class TestFallbackChain:
         from langchain_google_genai import (
             ChatGoogleGenerativeAI,
         )
-        from langchain_openai import ChatOpenAI
+        from langchain_groq import ChatGroq
 
         chain = provider.get_fallback_chain()
-        assert isinstance(chain[0], ChatAnthropic)
-        assert isinstance(chain[1], ChatOpenAI)
-        assert isinstance(chain[2], ChatGoogleGenerativeAI)
+        assert isinstance(chain[0], ChatGoogleGenerativeAI)
+        assert isinstance(chain[1], ChatGroq)
+        assert isinstance(chain[2], ChatAnthropic)
 
 
 class TestInvokeWithFallback:

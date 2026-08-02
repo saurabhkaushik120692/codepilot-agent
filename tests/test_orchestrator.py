@@ -30,6 +30,7 @@ def config():
         anthropic_api_key="test-key",
         openai_api_key="test-key",
         google_api_key="test-key",
+        groq_api_key="test-key",
     )
 
 
