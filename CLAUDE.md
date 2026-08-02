@@ -112,7 +112,8 @@ c:\ai-engineering\codepilot-agent\
 │       │   ├── bug_fix.py
 │       │   ├── feature_addition.py
 │       │   ├── dependency_update.py
-│       │   └── documentation.py
+│       │   ├── documentation.py
+│       │   └── config_change.py
 │       ├── memory/                  # 3-tier memory system
 │       │   ├── __init__.py
 │       │   ├── episodic.py          # LangGraph Memory Store

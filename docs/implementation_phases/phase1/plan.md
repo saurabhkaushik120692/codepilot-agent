@@ -1235,7 +1235,7 @@ We need a concrete implementation that maps our `BaseAgent` interface to actual 
 | `langgraph` | Agent runtime, checkpointing, memory store |
 
 ```bash
-uv add deepagents langgraph
+uv add deepagents langgraph aiosqlite
 ```
 
 ### Files to create
@@ -1963,6 +1963,7 @@ uv run python -m codepilot.main
 | `langchain-google-genai` | Step 4 | Gemini (fallback) |
 | `deepagents` | Step 6 | Agent framework |
 | `langgraph` | Step 6 | Agent runtime |
+| `aiosqlite` | Step 6 | Async SQLite for LangGraph checkpointing |
 
 ### What Phase 1 enables for Phase 2+
 

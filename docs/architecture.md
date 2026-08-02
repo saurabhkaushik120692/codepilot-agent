@@ -93,7 +93,7 @@ graph TD
         ABS["Abstraction Layer<br/>(deepagents wrapper)"]
         LLM["LLM Provider<br/>Claude Sonnet (primary)<br/>GPT-4o / Gemini (fallback)"]
         GR["Guardrails<br/>(NeMo + Custom)"]
-        SKL["Skills System<br/>(4 skills)"]
+        SKL["Skills System<br/>(5 skills)"]
     end
 
     subgraph Data_Layer["Data & Integration Layer"]
@@ -390,11 +390,13 @@ graph TD
     CLASSIFIER -->|"feature_addition"| S2["✨ Feature Addition Skill<br/>explore → design → implement → test → document"]
     CLASSIFIER -->|"dependency_update"| S3["📦 Dependency Update Skill<br/>changelog → update → conflicts → test_all"]
     CLASSIFIER -->|"documentation"| S4["📝 Documentation Skill<br/>read → draft → review → update_index"]
+    CLASSIFIER -->|"config_change"| S5["⚙️ Config Change Skill<br/>identify → validate → update → verify"]
     
     S1 --> CODER["Coder Agent"]
     S2 --> CODER
     S3 --> CODER
     S4 --> CODER
+    S5 --> CODER
 
     style CLASSIFIER fill:#e94560,stroke:#fff,color:#fff
 ```
@@ -407,16 +409,17 @@ class Skill:
     name: str                       # e.g., "bug_fix"
     instructions: str               # Detailed instructions for the agent
     workflow_steps: list[str]       # Ordered steps: ["reproduce", "localize", "fix", "verify"]
-    example_prompts: list[str]      # Example input prompts
+    example_prompts: list[str]      # Example input prompts for few-shot learning
     forbidden_actions: list[str]    # Actions the agent must NOT take
 ```
 
 | Skill | Workflow | Forbidden Actions |
-|---|---|---|
+|---|---|---|---|
 | **Bug Fix** | reproduce → localize → fix → verify | Modifying test infrastructure, skipping tests |
 | **Feature Addition** | explore_pattern → design → implement → test → document | Breaking public APIs without HITL approval |
 | **Dependency Update** | check_changelog → update → resolve_conflicts → test_all | Major version updates without HITL approval |
 | **Documentation** | read_existing → draft → review_accuracy → update_index | Removing existing docs, changing code behavior |
+| **Config Change** | identify → validate → update → verify | Modifying credentials/secrets, changing validation logic |
 
 ---
 
@@ -915,7 +918,8 @@ c:\ai-engineering\codepilot-agent\
 │       │   ├── bug_fix.py
 │       │   ├── feature_addition.py
 │       │   ├── dependency_update.py
-│       │   └── documentation.py
+│       │   ├── documentation.py
+│       │   └── config_change.py
 │       │
 │       ├── memory/                  # 3-tier memory system
 │       │   ├── __init__.py
