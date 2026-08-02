@@ -135,10 +135,9 @@ class Orchestrator:
             logger.info(f"Task {task_id} failed: {reason}")
 
     async def start_idle_loop(self) -> None:
-        """Enter the idle loop waiting for tasks.
-
-        In Phase 1, this just logs and returns.
-        Phase 2 will add issue polling here.
-        """
+        """Enter the idle loop waiting for tasks."""
         logger.info("Orchestrator idle — waiting for tasks...")
-        logger.info("(Issue polling will be added in Phase 2, Step 5)")
+
+    def get_active_tasks(self) -> dict[int, WorkingMemory]:
+        """Return all active task memory entries."""
+        return dict(self._active_tasks)

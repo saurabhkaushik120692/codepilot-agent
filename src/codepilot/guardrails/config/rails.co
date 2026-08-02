@@ -1,0 +1,77 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+define flow check prompt injection
+  """Detect and block prompt injection attempts in user input."""
+
+  $patterns = [
+    "ignore previous instructions",
+    "ignore all previous",
+    "disregard your instructions",
+    "forget your training",
+    "you are now",
+    "new instructions:",
+    "system prompt override",
+    "act as if",
+    "pretend you are",
+  ]
+
+  $matched = False
+  $user_input_lower = user_input.lower()
+
+  for $pattern in $patterns:
+    if $pattern in $user_input_lower:
+      $matched = True
+
+  if $matched:
+    bot response "I cannot process this request — potential prompt injection detected."
+    abort
+
+
+define flow check hardcoded secrets
+  """Prevent LLM from generating code with hardcoded secrets."""
+
+  $secret_patterns = [
+    "api_key =",
+    "secret_key =",
+    "password =",
+    "BEGIN RSA PRIVATE KEY",
+    "BEGIN OPENSSH PRIVATE KEY",
+  ]
+
+  $detected = False
+
+  for $pattern in $secret_patterns:
+    if $pattern in bot_message:
+      $detected = True
+
+  if $detected:
+    bot response "I cannot generate code with hardcoded secrets."
+    abort
+
+
+define flow check unsafe file paths
+  """Block references to system or sensitive file paths."""
+
+  $unsafe_patterns = [
+    "/etc/",
+    "/usr/",
+    "/bin/",
+    "/sbin/",
+    "C:\\Windows",
+    "C:\\Program Files",
+    "/sys/",
+    "/proc/",
+  ]
+
+  $detected = False
+
+  for $pattern in $unsafe_patterns:
+    if $pattern in bot_message:
+      $detected = True
+
+  if $detected:
+    bot response "I cannot reference unsafe system file paths."
+    abort
