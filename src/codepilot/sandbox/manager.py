@@ -38,9 +38,7 @@ class SandboxManager:
     def __init__(self, config: Config):
         self._config = config
 
-    def create(
-        self, sandbox_config: SandboxConfig, repo_path: str
-    ) -> str:
+    def create(self, sandbox_config: SandboxConfig, repo_path: str) -> str:
         """Create sandbox, copy relevant files, return sandbox path.
 
         Args:
@@ -73,9 +71,7 @@ class SandboxManager:
         )
         return str(sandbox_path)
 
-    async def execute(
-        self, sandbox_path: str, command: str
-    ) -> tuple[str, int]:
+    async def execute(self, sandbox_path: str, command: str) -> tuple[str, int]:
         """Run a command inside the sandbox directory.
 
         Args:
@@ -155,17 +151,13 @@ class SandboxManager:
                 diff_lines.append(f"+++ b/{rel}")
                 if not orig.exists():
                     lines = len(sandbox_content.splitlines())
-                    diff_lines.append(
-                        f"@@ -0,0 +1,{lines} @@"
-                    )
+                    diff_lines.append(f"@@ -0,0 +1,{lines} @@")
                     for line in sandbox_content.splitlines():
                         diff_lines.append(f"+{line}")
                 else:
                     orig_lines = orig_content.splitlines()
                     new_lines = sandbox_content.splitlines()
-                    diff_lines.append(
-                        f"@@ -1,{len(orig_lines)} +1,{len(new_lines)} @@"
-                    )
+                    diff_lines.append(f"@@ -1,{len(orig_lines)} +1,{len(new_lines)} @@")
                     for line in orig_lines:
                         if line not in new_lines:
                             diff_lines.append(f"-{line}")

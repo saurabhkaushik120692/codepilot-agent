@@ -27,9 +27,7 @@ try:
 
     DEEPAGENTS_AVAILABLE = True
 except ImportError:
-    logger.warning(
-        "deepagents not installed — using mock agent"
-    )
+    logger.warning("deepagents not installed — using mock agent")
     DEEPAGENTS_AVAILABLE = False
 
 
@@ -65,9 +63,7 @@ class DeepAgent(BaseAgent):
         try:
             # Build the prompt from messages
             prompt = "\n".join(
-                f"{m.get('role', 'user')}: "
-                f"{m.get('content', '')}"
-                for m in messages
+                f"{m.get('role', 'user')}: {m.get('content', '')}" for m in messages
             )
 
             # Run through deepagents
@@ -82,19 +78,14 @@ class DeepAgent(BaseAgent):
                 # Mock mode when deepagents isn't available
                 return AgentResult(
                     success=True,
-                    output=(
-                        f"[{self.name}] Mock response"
-                        " — deepagents not available"
-                    ),
+                    output=(f"[{self.name}] Mock response — deepagents not available"),
                     metadata={
                         "agent_name": self.name,
                         "mock": True,
                     },
                 )
         except Exception as e:
-            logger.error(
-                f"Agent {self.name} invoke failed: {e}"
-            )
+            logger.error(f"Agent {self.name} invoke failed: {e}")
             return AgentResult(
                 success=False,
                 output=str(e),
@@ -181,25 +172,14 @@ class DeepAgentFactory:
         if DEEPAGENTS_AVAILABLE:
             try:
                 llm = self._llm_provider.get_primary()
-                role_tools = (
-                    self._tool_registry.get_tools_for_role(
-                        role
-                    )
-                )
+                role_tools = self._tool_registry.get_tools_for_role(role)
 
                 deep_agent = create_deep_agent(
                     model=llm,
                     task=system_prompt,
-                    tools=(
-                        [t.handler for t in role_tools]
-                        if role_tools
-                        else None
-                    ),
+                    tools=([t.handler for t in role_tools] if role_tools else None),
                 )
-                logger.info(
-                    f"Created deepagents agent: "
-                    f"{name} (role={role})"
-                )
+                logger.info(f"Created deepagents agent: {name} (role={role})")
             except Exception as e:
                 logger.warning(
                     f"Failed to create deepagents agent "
@@ -207,10 +187,7 @@ class DeepAgentFactory:
                     "Falling back to mock agent."
                 )
         else:
-            logger.info(
-                f"Created mock agent: {name} "
-                "(deepagents not available)"
-            )
+            logger.info(f"Created mock agent: {name} (deepagents not available)")
 
         return DeepAgent(
             name=name,

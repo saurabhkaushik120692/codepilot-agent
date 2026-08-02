@@ -66,9 +66,7 @@ class TestEmbeddingRetriever:
         chroma_dir = str(tmp_path / "chroma")
         r = EmbeddingRetriever(persist_dir=chroma_dir)
 
-        mock_collection = patch.object(
-            r, "_get_collection"
-        ).start()
+        mock_collection = patch.object(r, "_get_collection").start()
         mock_collection.return_value.query.return_value = {
             "metadatas": [[{"filepath": "test.py"}]],
         }
@@ -108,15 +106,18 @@ class TestFileRetriever:
             str(tmp_path / f"extra_{i}.py") for i in range(10)
         ]
 
-        with patch.object(
-            EmbeddingRetriever, "index_files", return_value=None
-        ), patch.object(
-            EmbeddingRetriever,
-            "retrieve",
-            return_value=["calc.py"],
+        with (
+            patch.object(EmbeddingRetriever, "index_files", return_value=None),
+            patch.object(
+                EmbeddingRetriever,
+                "retrieve",
+                return_value=["calc.py"],
+            ),
         ):
             results = r.retrieve(
-                "addition", sample_repo_map, repo_path=str(tmp_path),
-                file_paths=big_list
+                "addition",
+                sample_repo_map,
+                repo_path=str(tmp_path),
+                file_paths=big_list,
             )
             assert "calc.py" in results

@@ -58,9 +58,7 @@ class ToolRegistry:
     def register(self, tool: ToolDefinition) -> None:
         """Register a tool. Overwrites if name exists."""
         if tool.name in self._tools:
-            logger.warning(
-                f"Overwriting existing tool: {tool.name}"
-            )
+            logger.warning(f"Overwriting existing tool: {tool.name}")
         self._tools[tool.name] = tool
         logger.debug(f"Registered tool: {tool.name}")
 
@@ -71,14 +69,10 @@ class ToolRegistry:
             ToolNotFoundError: If the tool is not registered.
         """
         if name not in self._tools:
-            raise ToolNotFoundError(
-                f"Tool not found: {name}"
-            )
+            raise ToolNotFoundError(f"Tool not found: {name}")
         return self._tools[name]
 
-    def register_role_tools(
-        self, role: str, tool_names: list[str]
-    ) -> None:
+    def register_role_tools(self, role: str, tool_names: list[str]) -> None:
         """Assign a list of tool names to an agent role.
 
         Args:
@@ -87,13 +81,9 @@ class ToolRegistry:
                 role can use.
         """
         self._role_tools[role] = tool_names
-        logger.debug(
-            f"Role '{role}' assigned tools: {tool_names}"
-        )
+        logger.debug(f"Role '{role}' assigned tools: {tool_names}")
 
-    def get_tools_for_role(
-        self, role: str
-    ) -> list[ToolDefinition]:
+    def get_tools_for_role(self, role: str) -> list[ToolDefinition]:
         """Get all tool definitions for a given role.
 
         Returns an empty list for unregistered roles.
@@ -104,10 +94,7 @@ class ToolRegistry:
             try:
                 tools.append(self.get_tool(name))
             except ToolNotFoundError:
-                logger.warning(
-                    f"Role '{role}' references "
-                    f"unregistered tool: {name}"
-                )
+                logger.warning(f"Role '{role}' references unregistered tool: {name}")
         return tools
 
     def list_all(self) -> list[str]:

@@ -19,9 +19,7 @@ try:
 
     NEMO_AVAILABLE = True
 except ImportError:
-    logger.warning(
-        "NeMo Guardrails not available — using custom guardrails only"
-    )
+    logger.warning("NeMo Guardrails not available — using custom guardrails only")
 
 
 class NemoGuardrailsWrapper:
@@ -84,11 +82,7 @@ class NemoGuardrailsWrapper:
 
         try:
             result = self._rails.generate(messages=[{"role": "user", "content": text}])
-            return (
-                result.get("content", text)
-                if isinstance(result, dict)
-                else text
-            )
+            return result.get("content", text) if isinstance(result, dict) else text
         except Exception:
             return text
 

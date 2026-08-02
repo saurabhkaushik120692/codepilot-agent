@@ -40,22 +40,17 @@ def tool_registry():
 
 @pytest.fixture
 def factory(config, llm_provider, tool_registry):
-    return DeepAgentFactory(
-        config, llm_provider, tool_registry
-    )
+    return DeepAgentFactory(config, llm_provider, tool_registry)
 
 
 class TestDeepAgentFactory:
     """Test the factory creates agents correctly."""
 
     @patch(
-        "codepilot.core.agent_factory"
-        ".DEEPAGENTS_AVAILABLE",
+        "codepilot.core.agent_factory.DEEPAGENTS_AVAILABLE",
         False,
     )
-    def test_creates_mock_agent_when_unavailable(
-        self, factory
-    ):
+    def test_creates_mock_agent_when_unavailable(self, factory):
         agent = factory.create_agent(
             name="TestAgent",
             system_prompt="You are a test agent.",
@@ -65,8 +60,7 @@ class TestDeepAgentFactory:
         assert agent.name == "TestAgent"
 
     @patch(
-        "codepilot.core.agent_factory"
-        ".DEEPAGENTS_AVAILABLE",
+        "codepilot.core.agent_factory.DEEPAGENTS_AVAILABLE",
         False,
     )
     def test_create_orchestrator(self, factory):
@@ -84,9 +78,7 @@ class TestDeepAgent:
     """Test the DeepAgent concrete implementation."""
 
     @pytest.fixture
-    def mock_agent(
-        self, config, tool_registry, llm_provider, factory
-    ):
+    def mock_agent(self, config, tool_registry, llm_provider, factory):
         return DeepAgent(
             name="TestAgent",
             config=config,
@@ -97,12 +89,8 @@ class TestDeepAgent:
         )
 
     @pytest.mark.asyncio
-    async def test_invoke_returns_agent_result(
-        self, mock_agent
-    ):
-        result = await mock_agent.invoke(
-            [{"role": "user", "content": "hello"}]
-        )
+    async def test_invoke_returns_agent_result(self, mock_agent):
+        result = await mock_agent.invoke([{"role": "user", "content": "hello"}])
         assert isinstance(result, AgentResult)
         assert result.success is True
         assert "Mock response" in result.output
@@ -110,9 +98,7 @@ class TestDeepAgent:
     @pytest.mark.asyncio
     async def test_stream_yields_events(self, mock_agent):
         events = []
-        async for event in mock_agent.stream(
-            [{"role": "user", "content": "hi"}]
-        ):
+        async for event in mock_agent.stream([{"role": "user", "content": "hi"}]):
             events.append(event)
 
         assert len(events) == 3
@@ -150,9 +136,7 @@ class TestDeepAgent:
             factory=factory,
         )
 
-        result = await agent.invoke(
-            [{"role": "user", "content": "Fix the bug"}]
-        )
+        result = await agent.invoke([{"role": "user", "content": "Fix the bug"}])
         assert result.success is True
         assert result.output == "Fixed the bug!"
         mock_deep.ainvoke.assert_called_once()

@@ -47,9 +47,7 @@ class FileFilter:
             if re.search(pattern, filepath, re.IGNORECASE):
                 raise GuardrailViolation(
                     rule="blocked_sensitive_file",
-                    detail=(
-                        f"File matches blocked pattern '{pattern}': {filepath}"
-                    ),
+                    detail=(f"File matches blocked pattern '{pattern}': {filepath}"),
                 )
 
         logger.debug(f"File passed guardrail: {filepath}")

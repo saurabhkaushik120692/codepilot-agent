@@ -32,9 +32,7 @@ class TestGetPrimary:
 
     def test_returns_anthropic_by_default(self, provider):
         model = provider.get_primary()
-        assert "claude" in str(model.model).lower() or hasattr(
-            model, "model"
-        )
+        assert "claude" in str(model.model).lower() or hasattr(model, "model")
 
     def test_custom_primary_from_config(self):
         config = Config(
@@ -55,9 +53,7 @@ class TestGetModel:
     def test_get_anthropic(self, provider):
         from langchain_anthropic import ChatAnthropic
 
-        model = provider.get_model(
-            "anthropic", "claude-sonnet-4-20250514"
-        )
+        model = provider.get_model("anthropic", "claude-sonnet-4-20250514")
         assert isinstance(model, ChatAnthropic)
 
     def test_get_openai(self, provider):
@@ -75,9 +71,7 @@ class TestGetModel:
         assert isinstance(model, ChatGoogleGenerativeAI)
 
     def test_unknown_provider_raises(self, provider):
-        with pytest.raises(
-            ValueError, match="Unknown LLM provider"
-        ):
+        with pytest.raises(ValueError, match="Unknown LLM provider"):
             provider.get_model("unknown", "some-model")
 
     def test_no_args_returns_primary(self, provider):
@@ -109,15 +103,11 @@ class TestInvokeWithFallback:
     """Test fallback behavior — all LLM calls mocked."""
 
     @pytest.mark.asyncio
-    async def test_uses_primary_when_it_succeeds(
-        self, provider
-    ):
+    async def test_uses_primary_when_it_succeeds(self, provider):
         mock_response = MagicMock()
         mock_response.content = "Hello from Claude"
 
-        with patch.object(
-            provider, "get_fallback_chain"
-        ) as mock_chain:
+        with patch.object(provider, "get_fallback_chain") as mock_chain:
             mock_llm = AsyncMock()
             mock_llm.ainvoke.return_value = mock_response
             mock_chain.return_value = [mock_llm]
@@ -129,19 +119,13 @@ class TestInvokeWithFallback:
             mock_llm.ainvoke.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_falls_back_on_primary_failure(
-        self, provider
-    ):
+    async def test_falls_back_on_primary_failure(self, provider):
         mock_response = MagicMock()
         mock_response.content = "Hello from GPT-4o"
 
-        with patch.object(
-            provider, "get_fallback_chain"
-        ) as mock_chain:
+        with patch.object(provider, "get_fallback_chain") as mock_chain:
             failing_llm = AsyncMock()
-            failing_llm.ainvoke.side_effect = Exception(
-                "Rate limit"
-            )
+            failing_llm.ainvoke.side_effect = Exception("Rate limit")
 
             fallback_llm = AsyncMock()
             fallback_llm.ainvoke.return_value = mock_response
@@ -158,9 +142,7 @@ class TestInvokeWithFallback:
 
     @pytest.mark.asyncio
     async def test_raises_when_all_fail(self, provider):
-        with patch.object(
-            provider, "get_fallback_chain"
-        ) as mock_chain:
+        with patch.object(provider, "get_fallback_chain") as mock_chain:
             llm1 = AsyncMock()
             llm1.ainvoke.side_effect = Exception("Error 1")
             llm2 = AsyncMock()
@@ -172,6 +154,4 @@ class TestInvokeWithFallback:
                 LLMProviderError,
                 match="All 2 LLM providers failed",
             ):
-                await provider.invoke_with_fallback(
-                    [{"role": "user", "content": "hi"}]
-                )
+                await provider.invoke_with_fallback([{"role": "user", "content": "hi"}])

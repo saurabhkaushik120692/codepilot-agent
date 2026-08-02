@@ -100,9 +100,7 @@ class RepoMapBuilder:
         try:
             self._encoder = tiktoken.get_encoding("cl100k_base")
         except Exception:
-            logger.warning(
-                "tiktoken encoder not available, using char-based estimate"
-            )
+            logger.warning("tiktoken encoder not available, using char-based estimate")
 
     def build(self, repo_path: str) -> str:
         """Walk directory, extract symbols, build tree within token budget.
@@ -143,9 +141,7 @@ class RepoMapBuilder:
         write_file_fn("/.repo_map.json", json.dumps({"repo_map": repo_map}))
         return repo_map
 
-    def _walk(
-        self, root: Path, current: Path, entries: list[FileEntry]
-    ) -> None:
+    def _walk(self, root: Path, current: Path, entries: list[FileEntry]) -> None:
         """Recursively walk directories, collecting FileEntry objects."""
         try:
             items = sorted(current.iterdir(), key=lambda p: (p.is_file(), p.name))
@@ -167,9 +163,7 @@ class RepoMapBuilder:
                     except Exception:
                         pass
 
-                entries.append(
-                    FileEntry(path=rel_path, language=lang, symbols=symbols)
-                )
+                entries.append(FileEntry(path=rel_path, language=lang, symbols=symbols))
 
     def _detect_language(self, filename: str) -> str:
         """Detect language from filename extension."""
@@ -218,9 +212,7 @@ class RepoMapBuilder:
                 lines.append(".")
             else:
                 lines.append(f"{dirname}/")
-            for entry in sorted(
-                by_dir[dirname], key=lambda e: (not e.symbols, e.path)
-            ):
+            for entry in sorted(by_dir[dirname], key=lambda e: (not e.symbols, e.path)):
                 line = f"  {os.path.basename(entry.path)} [{entry.language}]"
                 if entry.symbols:
                     line += "  " + ", ".join(entry.symbols)
@@ -237,10 +229,7 @@ class RepoMapBuilder:
         """Remove deepest lines until under the token budget."""
         budget = self._config.repo_map_token_budget
         lines = tree.split("\n")
-        while (
-            self._count_tokens("\n".join(lines)) > budget
-            and len(lines) > 1
-        ):
+        while self._count_tokens("\n".join(lines)) > budget and len(lines) > 1:
             max_indent_line = max(
                 range(len(lines)),
                 key=lambda i: (

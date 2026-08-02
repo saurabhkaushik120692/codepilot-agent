@@ -76,9 +76,7 @@ class GitHubService:
             self._repo = client.get_repo(self._config.github_repository)
             logger.info("GitHubService initialized with PyGithub")
         except Exception as e:
-            raise GitHubServiceError(
-                f"Failed to initialize GitHub client: {e}"
-            ) from e
+            raise GitHubServiceError(f"Failed to initialize GitHub client: {e}") from e
 
     async def list_issues(
         self, labels: list[str] | None = None, state: str = "open"
@@ -109,9 +107,7 @@ class GitHubService:
         except Exception as e:
             raise GitHubServiceError(f"Failed to list issues: {e}") from e
 
-    async def create_branch(
-        self, name: str, from_ref: str = "main"
-    ) -> Branch:
+    async def create_branch(self, name: str, from_ref: str = "main") -> Branch:
         """Create a new branch from the given reference."""
         try:
             source_branch = self._repo.get_branch(from_ref)
@@ -121,9 +117,7 @@ class GitHubService:
             )
             return Branch(name=name, ref=f"refs/heads/{name}")
         except Exception as e:
-            raise GitHubServiceError(
-                f"Failed to create branch '{name}': {e}"
-            ) from e
+            raise GitHubServiceError(f"Failed to create branch '{name}': {e}") from e
 
     async def create_pull_request(
         self,

@@ -71,8 +71,7 @@ class TestCoder:
         working_memory,
     ):
         coder = Coder(
-            mock_agent, config, mock_sandbox,
-            mock_command_filter, mock_file_filter
+            mock_agent, config, mock_sandbox, mock_command_filter, mock_file_filter
         )
 
         diff = await coder.implement(
@@ -101,8 +100,7 @@ class TestCoder:
         working_memory.state = TaskState.EXPLORING
 
         coder = Coder(
-            mock_agent, config, mock_sandbox,
-            mock_command_filter, mock_file_filter
+            mock_agent, config, mock_sandbox, mock_command_filter, mock_file_filter
         )
 
         await coder.implement(
@@ -125,8 +123,7 @@ class TestCoder:
         working_memory,
     ):
         coder = Coder(
-            mock_agent, config, mock_sandbox,
-            mock_command_filter, mock_file_filter
+            mock_agent, config, mock_sandbox, mock_command_filter, mock_file_filter
         )
 
         await coder.implement(
@@ -154,8 +151,7 @@ class TestCoder:
         )
 
         coder = Coder(
-            mock_agent, config, mock_sandbox,
-            mock_command_filter, mock_file_filter
+            mock_agent, config, mock_sandbox, mock_command_filter, mock_file_filter
         )
 
         await coder.implement(
@@ -184,8 +180,7 @@ class TestCoder:
         working_memory.retry_count = 1
 
         coder = Coder(
-            mock_agent, config, mock_sandbox,
-            mock_command_filter, mock_file_filter
+            mock_agent, config, mock_sandbox, mock_command_filter, mock_file_filter
         )
 
         await coder.implement(

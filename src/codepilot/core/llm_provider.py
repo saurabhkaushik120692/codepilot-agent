@@ -31,9 +31,7 @@ class LLMProvider:
     def __init__(self, config: Config):
         self._config = config
 
-    def _create_model(
-        self, provider: str, model: str
-    ) -> BaseChatModel:
+    def _create_model(self, provider: str, model: str) -> BaseChatModel:
         """Create an LLM instance for the given provider and model.
 
         Args:
@@ -60,9 +58,7 @@ class LLMProvider:
                     google_api_key=self._config.google_api_key,
                 )
             case _:
-                raise ValueError(
-                    f"Unknown LLM provider: {provider}"
-                )
+                raise ValueError(f"Unknown LLM provider: {provider}")
 
     def get_primary(self) -> BaseChatModel:
         """Return the primary LLM (Claude Sonnet by default)."""
@@ -86,19 +82,12 @@ class LLMProvider:
         chain = [self.get_primary()]
         for provider, model in self._config.fallback_chain:
             try:
-                chain.append(
-                    self._create_model(provider, model)
-                )
+                chain.append(self._create_model(provider, model))
             except Exception as e:
-                logger.warning(
-                    f"Could not create fallback "
-                    f"{provider}:{model}: {e}"
-                )
+                logger.warning(f"Could not create fallback {provider}:{model}: {e}")
         return chain
 
-    async def invoke_with_fallback(
-        self, messages: list, **kwargs: Any
-    ) -> Any:
+    async def invoke_with_fallback(self, messages: list, **kwargs: Any) -> Any:
         """Try each provider in order until one succeeds.
 
         Args:
@@ -116,19 +105,14 @@ class LLMProvider:
 
         for i, llm in enumerate(chain):
             try:
-                logger.debug(
-                    f"Trying LLM provider {i + 1}/{len(chain)}"
-                )
+                logger.debug(f"Trying LLM provider {i + 1}/{len(chain)}")
                 result = await llm.ainvoke(messages, **kwargs)
                 return result
             except Exception as e:
-                logger.warning(
-                    f"LLM provider {i + 1} failed: {e}"
-                )
+                logger.warning(f"LLM provider {i + 1} failed: {e}")
                 last_error = e
                 continue
 
         raise LLMProviderError(
-            f"All {len(chain)} LLM providers failed. "
-            f"Last error: {last_error}"
+            f"All {len(chain)} LLM providers failed. Last error: {last_error}"
         )

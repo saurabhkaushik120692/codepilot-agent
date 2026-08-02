@@ -2,10 +2,11 @@
 
 The Orchestrator:
 1. Receives tasks (from GitHub issues or manual input)
-2. Creates a TODO checklist via write_todos
-3. Delegates work to subagents (Repo Explorer, Coder, Test Agent, PR Agent)
-4. Monitors progress through the state machine
-5. Handles failures and retries
+2. Loads the appropriate skill based on classification type
+3. Queries episodic + semantic memory for context
+4. Spawns Repo Explorer → Coder → Test Agent
+5. Stores lessons and session summaries
+6. Transitions through the state machine
 
 It uses BaseAgent (via AgentFactory) — never touches deepagents directly.
 """
@@ -25,6 +26,9 @@ from codepilot.memory.working import (
 
 if TYPE_CHECKING:
     from codepilot.core.agent_factory import DeepAgentFactory
+    from codepilot.memory.episodic import EpisodicMemory
+    from codepilot.memory.semantic import SemanticMemory
+    from codepilot.skills.base import SkillRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +58,19 @@ class Orchestrator:
     Uses the BaseAgent interface — never touches deepagents directly.
     """
 
-    def __init__(self, agent: BaseAgent, config: Config):
+    def __init__(
+        self,
+        agent: BaseAgent,
+        config: Config,
+        skill_registry: SkillRegistry | None = None,
+        episodic: EpisodicMemory | None = None,
+        semantic: SemanticMemory | None = None,
+    ):
         self._agent = agent
         self._config = config
+        self._skill_registry = skill_registry
+        self._episodic = episodic
+        self._semantic = semantic
         self._active_tasks: dict[int, WorkingMemory] = {}
         logger.info("Orchestrator initialized")
 
@@ -92,6 +106,18 @@ class Orchestrator:
             f"Orchestrator handling message (task={task_id}, state={wm.state.value})"
         )
 
+        if self._skill_registry:
+            skill = self._skill_registry.get(self._get_task_type_from_message(message))
+            if skill:
+                logger.info(f"Loaded skill: {skill.name}")
+        else:
+            skill = None
+
+        if self._episodic and issue_id:
+            session = await self._episodic.get_session_for_issue(issue_id)
+            if session:
+                logger.info(f"Previous attempt found for issue #{issue_id}")
+
         messages = [{"role": "user", "content": message}]
         result = await self._agent.invoke(messages)
 
@@ -99,10 +125,25 @@ class Orchestrator:
             try:
                 wm.transition_to(TaskState.EXPLORING)
             except InvalidTransitionError:
-                pass  # Already past TRIAGED, that's fine
+                pass
 
         logger.info(f"Orchestrator result: success={result.success}")
         return result
+
+    def _get_task_type_from_message(self, message: str) -> str:
+        """Extract task type from a message (simple heuristic)."""
+        msg_lower = message.lower()
+        if "bug" in msg_lower or "fix" in msg_lower:
+            return "bug_fix"
+        if "feature" in msg_lower or "add" in msg_lower:
+            return "feature_addition"
+        if "update" in msg_lower or "upgrade" in msg_lower or "bump" in msg_lower:
+            return "dependency_update"
+        if "document" in msg_lower or "docstring" in msg_lower or "readme" in msg_lower:
+            return "documentation"
+        if "config" in msg_lower or "setting" in msg_lower:
+            return "config_change"
+        return "bug_fix"
 
     def get_task_state(self, task_id: int) -> TaskState | None:
         """Get the current state of a task."""

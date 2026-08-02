@@ -67,7 +67,5 @@ class RepoExplorer:
             query=task, repo_map=repo_map, repo_path=repo_path
         )
 
-        logger.info(
-            f"RepoExplorer found {len(results)} relevant files for task"
-        )
+        logger.info(f"RepoExplorer found {len(results)} relevant files for task")
         return results

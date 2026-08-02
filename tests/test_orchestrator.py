@@ -10,7 +10,12 @@ from codepilot.core.agent_factory import DeepAgentFactory
 from codepilot.core.base_agent import AgentResult, BaseAgent
 from codepilot.core.llm_provider import LLMProvider
 from codepilot.core.tool_registry import ToolRegistry
+from codepilot.memory.episodic import EpisodicMemory, SessionSummary
+from codepilot.memory.semantic import SemanticMemory
 from codepilot.memory.working import TaskState
+from codepilot.skills.base import SkillRegistry
+from codepilot.skills.bug_fix import BugFixSkill
+from codepilot.skills.feature_addition import FeatureAdditionSkill
 
 
 @pytest.fixture
@@ -154,3 +159,75 @@ class TestStartupFlow:
 
         orchestrator, config = await startup()
         assert isinstance(orchestrator, Orchestrator)
+
+
+class TestOrchestratorIntegration:
+    """Integration tests for skill + memory wiring."""
+
+    @pytest.mark.asyncio
+    async def test_skill_loaded_for_bug_task(self, mock_agent, config):
+        reg = SkillRegistry()
+        reg.register("bug_fix", BugFixSkill())
+        orchestrator = Orchestrator(agent=mock_agent, config=config, skill_registry=reg)
+        result = await orchestrator.handle_message("Fix the bug in main.py")
+        assert result.success is True
+
+    @pytest.mark.asyncio
+    async def test_skill_loaded_for_feature_task(self, mock_agent, config):
+        reg = SkillRegistry()
+        reg.register("feature_addition", FeatureAdditionSkill())
+        orchestrator = Orchestrator(agent=mock_agent, config=config, skill_registry=reg)
+        result = await orchestrator.handle_message("Add a new feature to the app")
+        assert result.success is True
+
+    @pytest.mark.asyncio
+    async def test_episodic_memory_prevents_duplicate(self, mock_agent, config):
+        episodic = EpisodicMemory()
+        await episodic.store_session(
+            SessionSummary(
+                issue_id=42, task_type="bug_fix", success=False, summary="Failed"
+            )
+        )
+        orchestrator = Orchestrator(agent=mock_agent, config=config, episodic=episodic)
+        result = await orchestrator.handle_message("Fix bug", issue_id=42)
+        assert result.success is True
+
+    @pytest.mark.asyncio
+    async def test_semantic_memory_provides_lessons(self, mock_agent, config):
+        from codepilot.memory.semantic import Lesson
+
+        semantic = SemanticMemory(persist_dir="/tmp/test_chroma")
+        semantic._get_collection = lambda: None
+        await semantic.store_lesson(
+            Lesson(
+                issue_id=10,
+                task_type="bug_fix",
+                problem="division by zero",
+                solution="add zero check",
+            )
+        )
+        orchestrator = Orchestrator(agent=mock_agent, config=config, semantic=semantic)
+        result = await orchestrator.handle_message("Fix division by zero bug")
+        assert result.success is True
+
+    @pytest.mark.asyncio
+    async def test_full_orchestrator_with_all_wiring(self, mock_agent, config):
+        reg = SkillRegistry()
+        reg.register("bug_fix", BugFixSkill())
+        reg.register("feature_addition", FeatureAdditionSkill())
+        episodic = EpisodicMemory()
+        semantic = SemanticMemory(persist_dir="/tmp/test_chroma")
+        semantic._get_collection = lambda: None
+
+        orchestrator = Orchestrator(
+            agent=mock_agent,
+            config=config,
+            skill_registry=reg,
+            episodic=episodic,
+            semantic=semantic,
+        )
+        result = await orchestrator.handle_message(
+            "Fix the division by zero bug in calculator", issue_id=100
+        )
+        assert result.success is True
+        assert orchestrator.get_task_state(100) == TaskState.EXPLORING

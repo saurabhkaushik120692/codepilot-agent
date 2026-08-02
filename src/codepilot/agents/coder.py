@@ -89,8 +89,7 @@ class Coder:
 
         sandbox_path = self._sandbox.create(sandbox_config, repo_path)
         logger.info(
-            f"Coder working in sandbox {sandbox_path} "
-            f"with {len(relevant_files)} files"
+            f"Coder working in sandbox {sandbox_path} with {len(relevant_files)} files"
         )
 
         try:
@@ -115,9 +114,7 @@ class Coder:
                 },
             ]
             result = await self._agent.invoke(messages)
-            logger.info(
-                f"Coder result: success={result.success}"
-            )
+            logger.info(f"Coder result: success={result.success}")
 
             diff = self._sandbox.get_diff(sandbox_path, repo_path)
             working_memory.current_diff = diff

@@ -76,11 +76,12 @@ class TestBaseAgent:
 
     def test_subclass_missing_methods_fails(self):
         """A subclass that doesn't implement all abstract methods
-            can't be instantiated."""
+        can't be instantiated."""
 
         class IncompleteAgent(BaseAgent):
             async def invoke(self, messages, context=None):
                 return AgentResult(success=True, output="ok")
+
             # Missing: stream() and spawn_subagent()
 
         with pytest.raises(TypeError):

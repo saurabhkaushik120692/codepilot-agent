@@ -44,9 +44,7 @@ class TestToolRegistration:
         ):
             registry.get_tool("unknown")
 
-    def test_duplicate_registration_overwrites(
-        self, registry
-    ):
+    def test_duplicate_registration_overwrites(self, registry):
         tool_v1 = ToolDefinition(
             name="x",
             description="v1",
@@ -79,9 +77,7 @@ class TestToolRegistration:
 class TestRoleTools:
     """Test role-based tool assignment."""
 
-    def test_assign_and_retrieve_role_tools(
-        self, registry, sample_tool
-    ):
+    def test_assign_and_retrieve_role_tools(self, registry, sample_tool):
         registry.register(sample_tool)
         registry.register_role_tools("coder", ["read_file"])
         tools = registry.get_tools_for_role("coder")
@@ -92,12 +88,8 @@ class TestRoleTools:
         tools = registry.get_tools_for_role("nonexistent")
         assert tools == []
 
-    def test_role_with_missing_tool_skips_it(
-        self, registry
-    ):
-        registry.register_role_tools(
-            "coder", ["read_file", "nonexistent"]
-        )
+    def test_role_with_missing_tool_skips_it(self, registry):
+        registry.register_role_tools("coder", ["read_file", "nonexistent"])
         registry.register(
             ToolDefinition(
                 name="read_file",
@@ -110,12 +102,8 @@ class TestRoleTools:
         assert len(tools) == 1
 
     def test_list_roles(self, registry):
-        registry.register_role_tools(
-            "coder", ["read_file"]
-        )
-        registry.register_role_tools(
-            "orchestrator", ["write_todos"]
-        )
+        registry.register_role_tools("coder", ["read_file"])
+        registry.register_role_tools("orchestrator", ["write_todos"])
         assert sorted(registry.list_roles()) == [
             "coder",
             "orchestrator",
@@ -133,10 +121,7 @@ class TestToolFlags:
             requires_guardrail=True,
         )
         registry.register(tool)
-        assert (
-            registry.get_tool("execute").requires_guardrail
-            is True
-        )
+        assert registry.get_tool("execute").requires_guardrail is True
 
     def test_approval_flag(self, registry):
         tool = ToolDefinition(
@@ -146,14 +131,9 @@ class TestToolFlags:
             requires_approval=True,
         )
         registry.register(tool)
-        assert (
-            registry.get_tool("git_push").requires_approval
-            is True
-        )
+        assert registry.get_tool("git_push").requires_approval is True
 
-    def test_default_flags_are_false(
-        self, registry, sample_tool
-    ):
+    def test_default_flags_are_false(self, registry, sample_tool):
         registry.register(sample_tool)
         tool = registry.get_tool("read_file")
         assert tool.requires_guardrail is False

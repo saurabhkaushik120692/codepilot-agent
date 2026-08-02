@@ -74,9 +74,7 @@ class IssuePoller:
                     try:
                         classification = await self._classifier.classify(issue)
                     except Exception as e:
-                        logger.error(
-                            f"Failed to classify issue #{issue.number}: {e}"
-                        )
+                        logger.error(f"Failed to classify issue #{issue.number}: {e}")
                         continue
 
                     logger.info(

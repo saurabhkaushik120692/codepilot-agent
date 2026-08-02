@@ -81,20 +81,14 @@ class CommandFilter:
             if re.search(pattern, command, re.IGNORECASE):
                 raise GuardrailViolation(
                     rule="blocked_command_pattern",
-                    detail=(
-                        f"Command matches '{pattern}': "
-                        f"{command[:100]}"
-                    ),
+                    detail=(f"Command matches '{pattern}': {command[:100]}"),
                 )
 
         for pattern in self.BLOCKED_PATH_PATTERNS:
             if re.search(pattern, command, re.IGNORECASE):
                 raise GuardrailViolation(
                     rule="blocked_system_path",
-                    detail=(
-                        f"Command references '{pattern}': "
-                        f"{command[:100]}"
-                    ),
+                    detail=(f"Command references '{pattern}': {command[:100]}"),
                 )
 
         logger.debug(f"Command passed guardrail: {command[:80]}")

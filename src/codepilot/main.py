@@ -14,12 +14,31 @@ from codepilot.core.tool_registry import ToolRegistry
 from codepilot.github_integration.classifier import IssueClassifier
 from codepilot.github_integration.github_service import GitHubService
 from codepilot.github_integration.issue_poller import IssuePoller
+from codepilot.memory.episodic import EpisodicMemory
+from codepilot.memory.semantic import SemanticMemory
+from codepilot.skills.base import SkillRegistry
+from codepilot.skills.bug_fix import BugFixSkill
+from codepilot.skills.config_change import ConfigChangeSkill
+from codepilot.skills.dependency_update import DependencyUpdateSkill
+from codepilot.skills.documentation import DocumentationSkill
+from codepilot.skills.feature_addition import FeatureAdditionSkill
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def _create_skill_registry() -> SkillRegistry:
+    """Create and populate the skill registry."""
+    registry = SkillRegistry()
+    registry.register("bug_fix", BugFixSkill())
+    registry.register("feature_addition", FeatureAdditionSkill())
+    registry.register("dependency_update", DependencyUpdateSkill())
+    registry.register("documentation", DocumentationSkill())
+    registry.register("config_change", ConfigChangeSkill())
+    return registry
 
 
 async def startup() -> tuple[Orchestrator, Config]:
@@ -31,10 +50,7 @@ async def startup() -> tuple[Orchestrator, Config]:
     logger.info("Starting CodePilot...")
 
     config = Config()
-    logger.info(
-        "Config loaded — primary LLM: "
-        f"{config.primary_llm}"
-    )
+    logger.info(f"Config loaded — primary LLM: {config.primary_llm}")
 
     llm_provider = LLMProvider(config)
     logger.info("LLM provider initialized")
@@ -42,32 +58,36 @@ async def startup() -> tuple[Orchestrator, Config]:
     tool_registry = ToolRegistry()
     logger.info("Tool registry initialized")
 
-    factory = DeepAgentFactory(
-        config, llm_provider, tool_registry
-    )
+    factory = DeepAgentFactory(config, llm_provider, tool_registry)
     logger.info("Agent factory initialized")
 
+    skill_registry = _create_skill_registry()
+    logger.info("Skill registry initialized")
+
+    episodic = EpisodicMemory()
+    logger.info("Episodic memory initialized")
+
+    semantic = SemanticMemory(config.chromadb_persist_dir)
+    logger.info("Semantic memory initialized")
+
     orchestrator = Orchestrator.create(factory, config)
+    orchestrator._skill_registry = skill_registry
+    orchestrator._episodic = episodic
+    orchestrator._semantic = semantic
     logger.info("Orchestrator created — ready for tasks")
 
     return orchestrator, config
 
 
-async def start_polling(
-    orchestrator: Orchestrator, config: Config
-) -> None:
+async def start_polling(orchestrator: Orchestrator, config: Config) -> None:
     """Start the issue polling loop (if GitHub is configured)."""
     if not config.github_app_id:
-        logger.info(
-            "GitHub not configured — skipping issue polling"
-        )
+        logger.info("GitHub not configured — skipping issue polling")
         return
 
     try:
         github = GitHubService(config)
-        classifier = IssueClassifier(
-            LLMProvider(config), config
-        )
+        classifier = IssueClassifier(LLMProvider(config), config)
         poller = IssuePoller(github, classifier, config)
 
         logger.info("Starting issue poller...")
@@ -85,10 +105,7 @@ async def start_polling(
                 f"{polled.classification.type}",
                 issue_id=polled.issue.id,
             )
-            logger.info(
-                "Orchestrator result: "
-                f"success={result.success}"
-            )
+            logger.info(f"Orchestrator result: success={result.success}")
 
     except Exception as e:
         logger.error(f"Polling failed: {e}")
@@ -99,9 +116,7 @@ async def main() -> None:
     """Main async entry point."""
     orchestrator, config = await startup()
 
-    polling_task = asyncio.create_task(
-        start_polling(orchestrator, config)
-    )
+    polling_task = asyncio.create_task(start_polling(orchestrator, config))
 
     await orchestrator.start_idle_loop()
 

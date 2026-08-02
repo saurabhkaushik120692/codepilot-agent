@@ -24,9 +24,7 @@ class KeywordRetriever:
     Uses simple term frequency matching — no external NLP library.
     """
 
-    def retrieve(
-        self, query: str, repo_map: str, top_k: int = 10
-    ) -> list[str]:
+    def retrieve(self, query: str, repo_map: str, top_k: int = 10) -> list[str]:
         """Find relevant file paths via keyword matching.
 
         Args:
@@ -204,16 +202,10 @@ class FileRetriever:
             return self._keyword_retrieve(query, repo_map)
 
     def _keyword_retrieve(self, query: str, repo_map: str) -> list[str]:
-        return self._keyword.retrieve(
-            query, repo_map, self._config.max_relevant_files
-        )
+        return self._keyword.retrieve(query, repo_map, self._config.max_relevant_files)
 
-    def _embedding_retrieve(
-        self, query: str, files: list[str]
-    ) -> list[str]:
+    def _embedding_retrieve(self, query: str, files: list[str]) -> list[str]:
         if self._embedding is None:
-            self._embedding = EmbeddingRetriever(
-                self._config.chromadb_persist_dir
-            )
+            self._embedding = EmbeddingRetriever(self._config.chromadb_persist_dir)
         self._embedding.index_files(files)
         return self._embedding.retrieve(query, self._config.max_relevant_files)

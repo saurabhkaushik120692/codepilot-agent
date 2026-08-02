@@ -28,9 +28,7 @@ def test_repo(tmp_path):
         "import os\n\ndef greet(name):\n    return f'Hello, {name}'\n\n"
         "class Greeter:\n    def say_hi(self):\n        return 'hi'\n"
     )
-    (src_dir / "utils.py").write_text(
-        "def helper():\n    return True\n"
-    )
+    (src_dir / "utils.py").write_text("def helper():\n    return True\n")
     tests_dir = tmp_path / "tests"
     tests_dir.mkdir()
     (tests_dir / "test_main.py").write_text("def test_greet():\n    pass\n")
@@ -124,8 +122,6 @@ class TestFileEntry:
     """Test the FileEntry dataclass."""
 
     def test_defaults(self):
-        entry = FileEntry(
-            path="src/main.py", language="Python", symbols=["def greet"]
-        )
+        entry = FileEntry(path="src/main.py", language="Python", symbols=["def greet"])
         assert entry.path == "src/main.py"
         assert entry.summary == ""
